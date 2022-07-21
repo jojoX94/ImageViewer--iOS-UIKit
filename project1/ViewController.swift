@@ -9,6 +9,8 @@ import UIKit
 
 class ViewController: UITableViewController {
     var pictures = [String]()
+    var viewCount = [String:Int]()
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,9 +26,19 @@ class ViewController: UITableViewController {
             let path = Bundle.main.resourcePath!
             let items = try! fm.contentsOfDirectory(atPath: path)
             
-            for item in items {
-                if item.description.hasPrefix("nssl") {
-                    self.pictures.append(item)
+            if let savedData = self.defaults.object(forKey: "view") as? [String:Int] {
+                for item in items {
+                    if item.description.hasPrefix("nssl") {
+                        self.pictures.append(item)
+                    }
+                }
+                self.viewCount = savedData
+            } else {
+                for item in items {
+                    if item.description.hasPrefix("nssl") {
+                        self.pictures.append(item)
+                        self.viewCount[item] = 0
+                    }
                 }
             }
             self.pictures.sort()
@@ -34,6 +46,10 @@ class ViewController: UITableViewController {
                 self.tableView.reloadData()
             }
         }
+    }
+    
+    func save() {
+        defaults.set(viewCount, forKey: "view")
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -47,6 +63,7 @@ class ViewController: UITableViewController {
         }
         cell.textLabel?.font = UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: palatino)
         cell.textLabel?.text = pictures[indexPath.row]
+        cell.detailTextLabel?.text = "Nombre de vues: \(viewCount[pictures[indexPath.row]]!) fois"
         return cell
     }
     
@@ -54,6 +71,11 @@ class ViewController: UITableViewController {
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             vc.selectedImage = pictures[indexPath.row]
             vc.subTitleOnNavBar = "\(indexPath.row)/\(pictures.count)"
+            
+            viewCount[pictures[indexPath.row]]! += 1
+            save()
+            tableView.reloadData()
+            
             navigationController?.pushViewController(vc, animated: true)
         }
     }
